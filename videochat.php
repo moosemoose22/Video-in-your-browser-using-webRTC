@@ -129,7 +129,7 @@ var CssManager = new function()
 		this.styles[newBrowserStyle].val = val;
 		var filterName;
 		if (BrowserVideoFunctions.isFirefox())
-			filterName = "filter";
+			filterName = "-moz-filter";
 		else if (BrowserVideoFunctions.isChrome())
 			filterName = "-webkit-filter";
 		var styleText = "";
