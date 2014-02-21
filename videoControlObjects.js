@@ -69,6 +69,8 @@ var VideoStreamManager = new function()
 				this.remoteDescription = remoteRequest;
 				this.localPeerConnection.onaddstream = this.gotRemoteStream;
 				this.localPeerConnection.setRemoteDescription(remoteRequest, this.gotRemoteDescription, handleError);
+				if (serverMessageObj.type == "offer")
+					updateCallStatus(serverMessageObj["from_user"] + " is calling you");
 			}
 			else if (serverMessageObj.type == "candidate")
 			{
@@ -141,6 +143,8 @@ var VideoStreamManager = new function()
 		//VideoStreamManager.localPeerConnection.addStream(VideoStreamManager.remoteStream);
 		BrowserVideoFunctions.attachMediaStream(VideoStreamManager.remoteVideo, event.stream);
 		trace("Received remote stream");
+		var otherVideoDude = VideoStreamManager.isCaller() ? VideoStreamManager.recipient : VideoStreamManager.caller;
+		updateCallStatus("You're in a video call with " + otherVideoDude);
 	}
 
 	this.start = function()
@@ -184,6 +188,7 @@ var VideoStreamManager = new function()
 		{
 			VideoStreamManager.localPeerConnection.createOffer(VideoStreamManager.gotLocalDescription, handleError, sdpConstraints);
 			trace("Added localStream to localPeerConnection");
+			updateCallStatus("Calling " + recipient);
 		}
 		else if (this.isRecipient())
 		{

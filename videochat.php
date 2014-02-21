@@ -210,6 +210,11 @@ function call(recipientID)
 	VideoStreamManager.call(videoUsername, recipient);
 }
 
+function updateCallStatus(text)
+{
+	$("#statusDiv").html(text);
+}
+
 function initPage()
 {
 	BrowserVideoFunctions.init();
@@ -227,8 +232,11 @@ function initPage()
 </table>
 
 <div>
-  <button type="button" id="startButton" onclick="VideoStreamManager.start()">Start</button>
-  <button type="button" id="hangupButton" onclick="VideoStreamManager.hangup()">Hang Up</button>
+	<table><tr>
+	<td><button type="button" id="startButton" onclick="VideoStreamManager.start()">Start</button></td>
+	<td><button type="button" id="hangupButton" onclick="VideoStreamManager.hangup()">Hang Up</button></td>
+	<td><div id="statusDiv"></div></td>
+	</tr></table>
 </div>
 <div id="usersOnline"></div>
 <table>
