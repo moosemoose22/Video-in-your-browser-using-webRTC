@@ -15,6 +15,7 @@ videochat.php--		Main video page. This is where all the video calls happen.
 videoControlObjects.js--	JavaScript page containing core video functionality.
 videoController.php--		PHP page that handles signaling. Videochat.php contacts this page via AJAX.
 webrtcVideo.sql--			SQL for building tables used by this video chat program.
+_sharedIncludes--			This directory has files that should be included everywhere, including database connection files and global function files.
 
 Thanks for reading!!
 
