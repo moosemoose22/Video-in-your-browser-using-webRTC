@@ -1,7 +1,7 @@
 WebRTC-video
 ============
 
-Proof-of-concept peer-to-peer video using the HTML5 Javascript API webRTC video engine
+**Proof-of-concept peer-to-peer video using the HTML5 Javascript API webRTC video engine**
 
 This is a demo of the new webRTC functonality in your browser. You can make video calls now without any plug-ins!!
 
