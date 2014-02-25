@@ -3,7 +3,7 @@
 -- http://www.phpmyadmin.net
 --
 -- Host: localhost
--- Generation Time: Feb 20, 2014 at 06:03 PM
+-- Generation Time: Feb 25, 2014 at 05:14 PM
 -- Server version: 5.1.58
 -- PHP Version: 5.2.17
 
@@ -29,7 +29,20 @@ CREATE TABLE IF NOT EXISTS `videoCalls` (
   `videoCallID` int(11) NOT NULL AUTO_INCREMENT,
   `videoCallTimestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`videoCallID`)
-) ENGINE=MyISAM DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=20 ;
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `videoCallUsers`
+--
+
+CREATE TABLE IF NOT EXISTS `videoCallUsers` (
+  `videoCallUserID` int(11) NOT NULL AUTO_INCREMENT,
+  `videoCallUserCallID` int(11) NOT NULL,
+  `videoCallUserUserID` int(11) NOT NULL,
+  PRIMARY KEY (`videoCallUserID`)
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=13 ;
 
 -- --------------------------------------------------------
 
@@ -41,8 +54,8 @@ CREATE TABLE IF NOT EXISTS `videoICEcandidates` (
   `videoCallID` int(11) NOT NULL,
   `sendVideoUsername` varchar(20) NOT NULL,
   `receiveVideoUsername` varchar(20) NOT NULL,
-  `videoIceCandidateLabel` varchar(200) NOT NULL,
-  `videoIceCandidateID` varchar(200) NOT NULL,
+  `videoIceCandidateMLineIndex` varchar(200) NOT NULL,
+  `videoIceCandidateMediaType` varchar(200) NOT NULL,
   `videoIceCandidateCandidate` varchar(200) NOT NULL,
   `videoIceCandidateRead` tinyint(1) NOT NULL DEFAULT '0'
 ) ENGINE=MyISAM DEFAULT CHARSET=latin1;
@@ -75,4 +88,4 @@ CREATE TABLE IF NOT EXISTS `videoUsers` (
   `videoUserIP` varchar(28) NOT NULL,
   `videoUserTimestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`videoUserID`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=59 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=112 ;

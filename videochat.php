@@ -6,6 +6,7 @@
 <!DOCTYPE html>
 <html>
 <head>
+<meta charset="UTF-8">
 <title>Video chat!</title>
 <script src="http://code.jquery.com/jquery-2.0.0.js"></script>
 <script src="videoControlObjects.js"></script>
@@ -47,9 +48,6 @@
 					else
 						ErrString += 'Uncaught Error.\n' + jqXHR.responseText;
 					trace(ErrString + "\nStatus:" + jqXHR.status + "\nResponseText:" + jqXHR.responseText);
-					//alert(ErrString);
-					//alert(jqXHR.status);
-					//alert(jqXHR.responseText);
 					//alert(exception);
 				}
 			});
@@ -68,7 +66,12 @@
 				UserManager.usersUpdatedTimestamp = timeAdded;
 				for (var userID in allUsers)
 				{
-					if (allUsers[userID] != videoUsername)
+					if (allUsers[userID] == videoUsername)
+					{
+						UserManager.myID = userID;
+						UserManager.myUsername = videoUsername;
+					}
+					else
 						UserManager.add(userID, allUsers[userID], timeAdded);
 				}
 				UserManager.handleUsersAdded();
@@ -85,13 +88,6 @@
 	};
 	
 	var g_userArray = [];
-	
-	function updateTimestamp()
-	{
-		ServerInterface.request("videoUsername=" + videoUsername);
-	}
-	
-	//var timestampUpdate = setInterval(updateTimestamp, 60000);
 	
 //var constraints = {audio: true, video: true};
 /* HD
@@ -168,6 +164,14 @@ var UserManager = new function()
 	{
 		this.users[id] = {username: user_name, timeAdded : time_added};
 	}
+
+	this.getUserName = function(userID)
+	{
+		if (this.users[userID])
+			return this.users[userID].username;
+		else
+			return userID;
+	}
 	
 	this.handleUsersAdded = function()
 	{
@@ -206,13 +210,8 @@ var UserManager = new function()
 
 function call(recipientID)
 {
-	var recipient = UserManager.users[recipientID].username;
-	VideoStreamManager.call(videoUsername, recipient);
-}
-
-function updateCallStatus(text)
-{
-	$("#statusDiv").html(text);
+	//var recipient = UserManager.users[recipientID].username;
+	VideoStreamManager.call(UserManager.myID, recipientID);
 }
 
 function initPage()
@@ -221,7 +220,7 @@ function initPage()
 	VideoStreamManager.init();
 	CssManager.init();
 	ServerInterface.request({ login: videoUsername });
-	checkMessageIntervalObj = setInterval(function(){ServerInterface.request({ check_messages: "true", user_name: videoUsername })},10000);
+	checkMessageIntervalObj = setInterval(function(){ServerInterface.request({ check_messages: "true", user_name: UserManager.myID })},10000);
 }
 </script>
 </head>
@@ -243,8 +242,6 @@ function initPage()
 <tbody id="styleContainer">
 </tbody>
 </table>
-<!--
-<tr><td>Invert</td><td><input type="range" onchange="CssManager.setCss('invert', this.value + '%');" value="0" step="5" min="0" max="100" /></td></tr>
--->
+
 </body>
 </html>

@@ -1,3 +1,8 @@
+function updateCallStatus(text)
+{
+	trace(text);
+	$("#statusDiv").html(text);
+}
 function trace(text)
 {
 	console.log((performance.now() / 1000).toFixed(3) + ": " + text);
@@ -42,7 +47,8 @@ var VideoStreamManager = new function()
 		this.remoteVideo = document.getElementById("remoteVideo");
 		this.startButton = document.getElementById("startButton");
 		this.hangupButton = document.getElementById("hangupButton");
-		this.addedLocalCandidate = false;
+		this.addedLocalAudioCandidate = false;
+		this.addedLocalVideoCandidate = false;
 		this.streamingLocalVideo = false;
 		startButton.disabled = false;
 		hangupButton.disabled = true;
@@ -63,56 +69,31 @@ var VideoStreamManager = new function()
 			var isSDPmessage = (serverMessageObj.type == "offer") || (serverMessageObj.type == "answer");
 			if (isSDPmessage)
 			{
-				this.caller = (serverMessageObj.type == "offer") ? serverMessageObj["from_user"] : videoUsername;
-				this.recipient = (serverMessageObj.type == "offer") ? videoUsername : serverMessageObj["from_user"];
+				this.callerID = (serverMessageObj.type == "offer") ? serverMessageObj["from_user"] : UserManager.myID;
+				this.recipientID = (serverMessageObj.type == "offer") ? UserManager.myID : serverMessageObj["from_user"];
+				this.callID = serverMessageObj.callID;
 				var remoteRequest = new BrowserVideoFunctions.RTCSessionDescription({type:serverMessageObj["type"], sdp:serverMessageObj["sdp"]});
 				this.remoteDescription = remoteRequest;
 				this.localPeerConnection.onaddstream = this.gotRemoteStream;
 				this.localPeerConnection.setRemoteDescription(remoteRequest, this.gotRemoteDescription, handleError);
 				if (serverMessageObj.type == "offer")
-					updateCallStatus(serverMessageObj["from_user"] + " is calling you");
+					updateCallStatus(UserManager.getUserName(serverMessageObj["from_user"]) + " is calling you");
 			}
 			else if (serverMessageObj.type == "candidate")
 			{
 				//alert(serverMessageObj.label);
 				//alert(serverMessageObj.candidate);
-				var candidate = new BrowserVideoFunctions.RTCIceCandidate({sdpMLineIndex: serverMessageObj.label,
+				var candidate = new BrowserVideoFunctions.RTCIceCandidate({sdpMLineIndex: serverMessageObj.mLineIndex,
 													candidate: serverMessageObj.candidate}, handleSuccess, handleError);
 				this.gotRemoteIceCandidate(candidate);
 			}
 		}
-		/*
-		 setRemote(message);
-		 	setremotedescription
-		 	waitForRemoteVideo
-		 	transitionToActive
-    	doAnswer();
-		*/
 	}
 	
 	this.onSetRemoteDescriptionSuccess = function()
 	{
-		console.log("Set remote session description success.");
+		trace("Set remote session description success.");
 		return;
-		// By now all addstream events for the setRemoteDescription have fired.
-		// So we can know if the peer is sending any stream or is only receiving.
-		if (this.remoteStream)
-			this.waitForRemoteVideo();
-		else
-		{
-			console.log("Not receiving any stream.");
-			//BrowserVideoFunctions.attachMediaStream();
-		}
-	}
-
-	this.waitForRemoteVideo = function()
-	{
-		// Call the getVideoTracks method via adapter.js.
-		videoTracks = VideoStreamManager.remoteStream.getVideoTracks();
-		if (videoTracks.length === 0 || remoteVideo.currentTime > 0)
-			transitionToActive();
-		else
-			setTimeout(waitForRemoteVideo, 100);
 	}
 
 	this.gotLocalStream = function(stream)
@@ -126,15 +107,6 @@ var VideoStreamManager = new function()
 		UserManager.createCallHTML();
 	}
 
-/*
-	this.gotRemoteStream = function(stream)
-	{
-		trace("Received remote stream " + stream);
-		VideoStreamManager.remoteVideo.src = URL.createObjectURL(stream);
-		VideoStreamManager.remoteStream = stream;
-		VideoStreamManager.localPeerConnection.addStream(VideoStreamManager.remoteStream);
-	}
-*/
 	this.gotRemoteStream = function(event)
 	{
 		//alert("gotRemoteStream yo!");
@@ -143,8 +115,8 @@ var VideoStreamManager = new function()
 		//VideoStreamManager.localPeerConnection.addStream(VideoStreamManager.remoteStream);
 		BrowserVideoFunctions.attachMediaStream(VideoStreamManager.remoteVideo, event.stream);
 		trace("Received remote stream");
-		var otherVideoDude = VideoStreamManager.isCaller() ? VideoStreamManager.recipient : VideoStreamManager.caller;
-		updateCallStatus("You're in a video call with " + otherVideoDude);
+		var otherVideoDude = VideoStreamManager.isCaller() ? VideoStreamManager.recipientID : VideoStreamManager.callerID;
+		updateCallStatus("You're in a video call with " + UserManager.getUserName(otherVideoDude));
 	}
 
 	this.start = function()
@@ -162,20 +134,20 @@ var VideoStreamManager = new function()
 
 	this.isCaller = function()
 	{
-		return videoUsername == this.caller;
+		return UserManager.myID == this.callerID;
 	}
 
 	this.isRecipient = function()
 	{
-		return videoUsername == this.recipient;
+		return UserManager.myID == this.recipientID;
 	}
 
-	this.call = function(caller, recipient, remoteSDP)
+	this.call = function(callerID, recipientID, remoteSDP)
 	{
 		//alert("calling!");
-		this.caller = caller;
-		this.recipient = recipient;
-		trace("Starting call to " + recipient);
+		this.callerID = callerID;
+		this.recipientID = recipientID;
+		trace("Starting call to " + UserManager.getUserName(recipientID));
 
 		if (this.localStream.getVideoTracks().length > 0) {
 			trace('Using video device: ' + this.localStream.getVideoTracks()[0].label);
@@ -188,7 +160,7 @@ var VideoStreamManager = new function()
 		{
 			VideoStreamManager.localPeerConnection.createOffer(VideoStreamManager.gotLocalDescription, handleError, sdpConstraints);
 			trace("Added localStream to localPeerConnection");
-			updateCallStatus("Calling " + recipient);
+			updateCallStatus("Calling " + UserManager.getUserName(recipientID));
 		}
 		else if (this.isRecipient())
 		{
@@ -202,7 +174,7 @@ var VideoStreamManager = new function()
 	this.handleCreateOfferError = function(event)
 	{
 		//alert("handlecreateoffer");
-		console.log('createOffer() error: ', e);
+		trace('createOffer() error: ', e);
 	}
 
 	this.gotLocalDescription = function(description)
@@ -210,11 +182,13 @@ var VideoStreamManager = new function()
 		//if (description.type != "offer")
 			VideoStreamManager.localPeerConnection.setLocalDescription(description, VideoStreamManager.onAddLocalDescription, handleError);
 		//alert("type: " + description.type + "\nCaller? " + VideoStreamManager.isCaller() + "\nsdp: " + description.sdp);
-		var from = VideoStreamManager.isCaller() ? VideoStreamManager.caller : VideoStreamManager.recipient;
-		var to = VideoStreamManager.isCaller() ? VideoStreamManager.recipient : VideoStreamManager.caller;
+		var from = VideoStreamManager.isCaller() ? VideoStreamManager.callerID : VideoStreamManager.recipientID;
+		var to = VideoStreamManager.isCaller() ? VideoStreamManager.recipientID : VideoStreamManager.callerID;
 		ServerInterface.request({ sdp_message: description,
+									call_ID: VideoStreamManager.callID,
 									from_video_user: from,
 									to_video_user: to});
+		VideoStreamManager.logCall(description, to);
 	}
 	
 	this.onAddLocalDescription = function(description)
@@ -254,21 +228,30 @@ var VideoStreamManager = new function()
 	{
 		//for (var x in event)
 		//	trace(x + ": " + event[x]);
-		if (event.candidate && !this.addedLocalCandidate)
+		if (event.candidate)
 		{
-			//alert("gotLocalIceCandidate " + event.candidate);
-			trace("Local ICE candidate: \n" + event.candidate.candidate);
-			VideoStreamManager.localPeerConnection.addIceCandidate(new BrowserVideoFunctions.RTCIceCandidate(event.candidate, handleSuccess, handleError));
-			var candidateObj = {type: 'candidate',
-								label: event.candidate.sdpMLineIndex,
-								id: event.candidate.sdpMid,
-								candidate: event.candidate.candidate};
-			var from = VideoStreamManager.isCaller() ? VideoStreamManager.caller : VideoStreamManager.recipient;
-			var to = VideoStreamManager.isCaller() ? VideoStreamManager.recipient : VideoStreamManager.caller;
-			ServerInterface.request({ sdp_message: candidateObj,
-									from_video_user: from,
-									to_video_user: to});
-			this.addedLocalCandidate = true;
+			var mediaType = event.candidate.sdpMid;
+			var addedAudioCandidate = (mediaType == "audio" && VideoStreamManager.addedLocalAudioCandidate);
+			var addedVideoCandidate = (mediaType == "video" && VideoStreamManager.addedLocalVideoCandidate);
+
+			if (!addedAudioCandidate && !addedVideoCandidate)
+			{
+				trace("Local ICE candidate: \n" + event.candidate.candidate);
+				VideoStreamManager.localPeerConnection.addIceCandidate(new BrowserVideoFunctions.RTCIceCandidate(event.candidate, handleSuccess, handleError));
+				var candidateObj = {type: 'candidate',
+									mLineIndex: event.candidate.sdpMLineIndex,
+									mediaType: mediaType,
+									candidate: event.candidate.candidate};
+				var from = VideoStreamManager.isCaller() ? VideoStreamManager.callerID : VideoStreamManager.recipientID;
+				var to = VideoStreamManager.isCaller() ? VideoStreamManager.recipientID : VideoStreamManager.callerID;
+				ServerInterface.request({ sdp_message: candidateObj,
+										call_ID: VideoStreamManager.callID,
+										from_video_user: from,
+										to_video_user: to});
+				VideoStreamManager.logCall(candidateObj, to);
+				VideoStreamManager.addedLocalAudioCandidate = (VideoStreamManager.addedLocalAudioCandidate || (mediaType == "audio"));
+				VideoStreamManager.addedLocalVideoCandidate = (VideoStreamManager.addedLocalVideoCandidate || (mediaType == "video"));
+			}
 		}
 	}
 
@@ -281,6 +264,11 @@ var VideoStreamManager = new function()
 		}
 	}
 	
+	this.logCall = function(callObj, toUser)
+	{
+		trace("Sent " + callObj.type + " message with call ID " + VideoStreamManager.callID + " to " + toUser);
+	}
+	
 	this.connectionServers;
 	this.serverConstraints;
 	this.localVideo;
@@ -288,10 +276,11 @@ var VideoStreamManager = new function()
 	this.localStream;
 	this.remoteStream;
 	this.remoteDescription;
-	this.caller;
-	this.recipient;
+	this.callerID;
+	this.recipientID;
 	this.localPeerConnection;
-	this.addedLocalCandidate;
+	this.addedLocalAudioCandidate;
+	this.addedLocalVideoCandidate;
 	this.startButton;
 	this.hangupButton;
 	this.streamingLocalVideo;
@@ -322,7 +311,7 @@ var BrowserVideoFunctions = new function()
 	{
 		if (navigator.mozGetUserMedia)
 		{
-			console.log("This appears to be Firefox");
+			trace("This appears to be Firefox");
 
 			this.webrtcDetectedBrowser = "firefox";
 
@@ -367,14 +356,14 @@ var BrowserVideoFunctions = new function()
 			// Attach a media stream to an element.
 			this.attachMediaStream = function(element, stream)
 			{
-				console.log("Attaching media stream");
+				trace("Attaching media stream");
 				element.mozSrcObject = stream;
 				element.play();
 			};
 
 			this.reattachMediaStream = function(to, from)
 			{
-				console.log("Reattaching media stream");
+				trace("Reattaching media stream");
 				to.mozSrcObject = from.mozSrcObject;
 				to.play();
 			};
@@ -390,7 +379,7 @@ var BrowserVideoFunctions = new function()
 		}
 		else if (navigator.webkitGetUserMedia)
 		{
-			console.log("This appears to be Chrome");
+			trace("This appears to be Chrome");
 
 			this.webrtcDetectedBrowser = "chrome";
 			this.webrtcDetectedVersion = parseInt(navigator.userAgent.match(/Chrom(e|ium)\/([0-9]+)\./)[2]);
@@ -448,7 +437,7 @@ var BrowserVideoFunctions = new function()
 				else if (typeof element.src !== 'undefined')
 					element.src = URL.createObjectURL(stream);
 				else
-					console.log('Error attaching stream to element.');
+					trace('Error attaching stream to element.');
 			}
 
 			this.reattachMediaStream = function(to, from)
@@ -480,6 +469,6 @@ var BrowserVideoFunctions = new function()
 			}
 		}
 		else
-			console.log("Browser does not appear to be WebRTC-capable");
+			trace("Browser does not appear to be WebRTC-capable");
 	}
 };
