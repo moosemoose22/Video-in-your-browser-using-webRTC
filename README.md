@@ -1,14 +1,17 @@
-WebRTC-video
+Video communications system in your browser!
 ============
 
 **_Proof-of-concept peer-to-peer video using the HTML5 Javascript API webRTC video engine_**
 
-This is a demo of the new webRTC functonality in your browser.  
-You can make video calls now without any plug-ins!!
+This project demonstrates a miniature audio/video communications system using HTML5 as the audio/video engine.  
+It was originally built as a proof-of-concept: could I get video to work without any additional plug-ins? And it works!! :)  
+This project also demonstrates a miniature communications system that makes and logs calls between 2 users.
 
-There are tons of webRTC demos on the web. I wanted to do webRTC video too! I wanted to create a demo that could be installed on most web hosting service provider accounts. This meant that I couldn't use node.js or a unix service in C for signaling.
+I wanted to create a demo that could be installed on most web hosting service provider accounts. This meant that I couldn't use node.js or a unix service in C for signaling.
 
-We use AJAX, PHP, and a MySQL database for signalling.
+I also wanted to build the basics of a communications service. It would log all users and messaging. The uploaded version deletes all old data in order to keep a clean database. You can easily change that to log all calls.
+
+We use AJAX, PHP, and a MySQL database for signaling and logging all communications.
 
 Breakdown of files:  
 *videologin.html--*	Initial login page. We take your login name and put it in the database for use in video calls.  
