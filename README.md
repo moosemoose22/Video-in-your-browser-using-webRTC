@@ -9,7 +9,7 @@ There are tons of webRTC demos on the web. I wanted to do webRTC video too! I wa
 
 We use AJAX, PHP, and a MySQL database for signalling.
 
-Breakdown of files:
+Breakdown of files:  
 *videologin.html--*	Initial login page. We take your login name and put it in the database for use in video calls.  
 *videochat.php--*		Main video page. This is where all the video calls happen.  
 *videoControlObjects.js--*	JavaScript page containing core video functionality.  
@@ -17,6 +17,6 @@ Breakdown of files:
 *webrtcVideo.sql--*			SQL for building tables used by this video chat program.  
 *_sharedIncludes--*			This directory has files that should be included everywhere, including database connection files and global function files.
 
-_Thanks for reading!!_
+**Thanks for reading!!**
 
 Special thanks to Sam Dutton, whose webRTC code (https://bitbucket.org/webrtc) and articles (http://www.html5rocks.com/en/tutorials/webrtc/basics/, http://www.html5rocks.com/en/tutorials/webrtc/infrastructure/) helped me tremendously in making this project happen! Check out some of his super cool projects here: https://github.com/samdutton/simpl.
