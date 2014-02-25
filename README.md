@@ -1,4 +1,4 @@
-##Video communications system in your browser!##
+##Video communication system in your browser!##
 
 
 **_Peer-to-peer audio/video communications system using the HTML5 Javascript API webRTC video engine_**
