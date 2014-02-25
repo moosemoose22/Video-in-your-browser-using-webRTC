@@ -11,6 +11,8 @@ I wanted to create a demo that could be installed on most web hosting service pr
 
 I also wanted to build the basics of a communications service. It would log all users and messaging. The uploaded version deletes all old data in order to keep a clean database. You can easily change that to log all calls.
 
+You need to be using the latest versions of Chrome or Firefox. Chrome users cannot call Firefox users without getting a special Firefox build. You might also need to go to about:config and set the media.peerconnection.enabled preference to “true.” You can read more about it here: http://thenextweb.com/apps/2013/02/04/google-and-mozilla-show-off-video-chat-between-chrome-and-firefox-thanks-to-webrtc-support/#!xymz4.
+
 We use AJAX, PHP, and a MySQL database for signaling and logging all communications.
 
 Breakdown of files:  
