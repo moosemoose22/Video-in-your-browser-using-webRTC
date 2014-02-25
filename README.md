@@ -1,7 +1,7 @@
 Video communications system in your browser!
 ============
 
-**_Proof-of-concept peer-to-peer video using the HTML5 Javascript API webRTC video engine_**
+**_Peer-to-peer audio/video communications system using the HTML5 Javascript API webRTC video engine_**
 
 This project demonstrates a miniature audio/video communications system using HTML5 as the audio/video engine.  
 It was originally built as a proof-of-concept: could I get video to work without any additional plug-ins? And it works!! :)  
