@@ -20,5 +20,4 @@ Breakdown of files:
 
 **Thanks for reading!!**
 
-*Special thanks*  
 Special thanks to Sam Dutton, whose webRTC code (https://bitbucket.org/webrtc) and articles (http://www.html5rocks.com/en/tutorials/webrtc/basics/, http://www.html5rocks.com/en/tutorials/webrtc/infrastructure/) helped me tremendously in making this project happen! Check out some of his super cool projects here: https://github.com/samdutton/simpl.
