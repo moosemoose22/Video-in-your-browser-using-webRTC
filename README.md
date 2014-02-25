@@ -3,9 +3,9 @@
 
 **_Peer-to-peer audio/video communications system using the HTML5 Javascript API webRTC video engine_**
 
-This project demonstrates a miniature audio/video communications system using HTML5 as the audio/video engine.  
+This project demonstrates a basic peer-to-peer audio/video communications system using HTML5 as the audio/video engine.
+
 It was originally built as a proof-of-concept: could I get video to work without any additional plug-ins? And it works!! :)  
-This project also demonstrates a miniature communications system that makes and logs calls between 2 users.
 
 I wanted to create a demo that could be installed on most web hosting service provider accounts. This meant that I couldn't use node.js or a unix service in C for signaling.
 
