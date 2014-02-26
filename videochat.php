@@ -162,7 +162,7 @@ var UserManager = new function()
 {
 	this.add = function(id, user_name, time_added)
 	{
-		this.users[id] = {username: user_name, timeAdded : time_added};
+		this.users[id] = {username: user_name, timeAdded: time_added};
 	}
 
 	this.getUserName = function(userID)
@@ -220,7 +220,7 @@ function initPage()
 	VideoStreamManager.init();
 	CssManager.init();
 	ServerInterface.request({ login: videoUsername });
-	checkMessageIntervalObj = setInterval(function(){ServerInterface.request({ check_messages: "true", user_name: UserManager.myID })},10000);
+	checkMessageIntervalObj = setInterval(function(){ServerInterface.request({ check_messages: "true", user_id: UserManager.myID })},10000);
 }
 </script>
 </head>

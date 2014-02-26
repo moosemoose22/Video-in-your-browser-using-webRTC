@@ -119,13 +119,13 @@
 		$checkMessageTxt = "SELECT videoCallID, sendVideoUsername, receiveVideoUsername, videoSDP as message, '' as mLineIndex,
 								videoSDPtype as type
 							FROM videoSDP
-							WHERE receiveVideoUsername = '{$client_form_data['user_name']}'
+							WHERE receiveVideoUsername = '{$client_form_data['user_id']}'
 							AND videoSDPread = 0
 							UNION
 							SELECT videoCallID, sendVideoUsername, receiveVideoUsername, videoIceCandidateCandidate as message,
 								videoIceCandidateMLineIndex as mLineIndex, 'candidate' as type
 							FROM videoICEcandidates
-							WHERE receiveVideoUsername = '{$client_form_data['user_name']}'
+							WHERE receiveVideoUsername = '{$client_form_data['user_id']}'
 							AND videoIceCandidateRead = 0";
 
 		$messagesSql = $mysqli->query($checkMessageTxt);
@@ -159,15 +159,15 @@
 
 		$mysqli->query("UPDATE videoSDP
 						SET videoSDPread = 1
-						WHERE receiveVideoUsername = '{$client_form_data['user_name']}';");
+						WHERE receiveVideoUsername = '{$client_form_data['user_id']}';");
 
 		$mysqli->query("UPDATE videoICEcandidates
 						SET videoIceCandidateRead = 1
-						WHERE receiveVideoUsername = '{$client_form_data['user_name']}';");
+						WHERE receiveVideoUsername = '{$client_form_data['user_id']}';");
 
 		$mysqli->query("UPDATE videoUsers
 						SET videoUserTimestamp = now()
-						WHERE videoUsername = '{$client_form_data['user_name']}';");
+						WHERE videoUserID = {$client_form_data['user_id']};");
 
 		$allDataArray["users"] = getAllUsers();
 
