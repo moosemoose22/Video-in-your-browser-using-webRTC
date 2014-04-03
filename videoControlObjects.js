@@ -23,6 +23,10 @@ function handleError(err)
 		errString += err;
 	console.error(errString);
 }
+function addStatus(status)
+{
+	$("#StatusList").html($("#StatusList").html() + "<br />" + status);
+}
 
 var sdpConstraints = {
 	optional: [],
@@ -44,7 +48,6 @@ var VideoStreamManager = new function()
 		this.connectionServers = {"iceServers":[{"url":"stun:23.21.150.121"}]};
 		this.serverConstraints = { 'optional': [{'DtlsSrtpKeyAgreement': true}, {'RtpDataChannels': true }] };
 		this.localVideo = document.getElementById("localVideo");
-		this.remoteVideo = document.getElementById("remoteVideo");
 		this.startButton = document.getElementById("startButton");
 		this.hangupButton = document.getElementById("hangupButton");
 		this.addedLocalAudioCandidate = false;
@@ -52,12 +55,22 @@ var VideoStreamManager = new function()
 		this.streamingLocalVideo = false;
 		startButton.disabled = false;
 		hangupButton.disabled = true;
-		//startButton.onclick = VideoStreamManager.start;
-		//hangupButton.onclick = VideoStreamManager.hangup;
-		this.localPeerConnection = new BrowserVideoFunctions.RTCPeerConnection(this.connectionServers, this.serverConstraints);
-		trace("Created local peer connection object localPeerConnection");
-		this.localPeerConnection.onicecandidate = this.gotLocalIceCandidate;
-		this.localPeerConnection.onaddstream = this.gotLocalStream;
+		this.initVideo(0);
+	}
+	
+	this.initVideo = function(videoConnectionIndex)
+	{
+		this.localPeerConnection[videoConnectionIndex] = new BrowserVideoFunctions.RTCPeerConnection(this.connectionServers, this.serverConstraints);
+		trace("Created local peer connection object localPeerConnection[" + videoConnectionIndex + "]");
+		this.localPeerConnection[videoConnectionIndex].onicecandidate = this.gotLocalIceCandidate;
+		this.localPeerConnection[videoConnectionIndex].onaddstream = this.gotLocalStream;
+		var newtr = document.createElement("tr");
+		var newtd = document.createElement("td");
+		newtd.innerHTML = "<video id=\"remoteVideo" + videoConnectionIndex + "\" style=\"width:400px; height: 300px\" autoplay></video>";
+		newtr.appendChild(newtd);
+		document.getElementById("remoteVideoContainer").appendChild(newtr);
+		// DOM apparently needs time to add video element to HTML page
+		window.setTimeout(function(){VideoStreamManager.remoteVideo = document.getElementById("remoteVideo" + videoConnectionIndex);}, 100)
 	}
 
 	this.processIncomingMessage = function(serverMessages)
@@ -74,10 +87,12 @@ var VideoStreamManager = new function()
 				this.callID = serverMessageObj.callID;
 				var remoteRequest = new BrowserVideoFunctions.RTCSessionDescription({type:serverMessageObj["type"], sdp:serverMessageObj["sdp"]});
 				this.remoteDescription = remoteRequest;
-				this.localPeerConnection.onaddstream = this.gotRemoteStream;
-				this.localPeerConnection.setRemoteDescription(remoteRequest, this.gotRemoteDescription, handleError);
+				this.localPeerConnection[0].onaddstream = this.gotRemoteStream;
+				this.localPeerConnection[0].setRemoteDescription(remoteRequest, this.gotRemoteDescription, handleError);
 				if (serverMessageObj.type == "offer")
 					updateCallStatus(UserManager.getUserName(serverMessageObj["from_user"]) + " is calling you");
+				if (serverMessageObj.type == "answer")
+					addStatus("Got an answer to offer from " + UserManager.getUserName(serverMessageObj["from_user"]));
 			}
 			else if (serverMessageObj.type == "candidate")
 			{
@@ -86,6 +101,7 @@ var VideoStreamManager = new function()
 				var candidate = new BrowserVideoFunctions.RTCIceCandidate({sdpMLineIndex: serverMessageObj.mLineIndex,
 													candidate: serverMessageObj.candidate}, handleSuccess, handleError);
 				this.gotRemoteIceCandidate(candidate);
+				addStatus("Got Remote ICE candidate from " + UserManager.getUserName(serverMessageObj["from_user"]));
 			}
 		}
 	}
@@ -100,11 +116,12 @@ var VideoStreamManager = new function()
 	{
 		VideoStreamManager.localVideo.src = URL.createObjectURL(stream);
 		VideoStreamManager.localStream = stream;
-		VideoStreamManager.localPeerConnection.addStream(VideoStreamManager.localStream);
+		VideoStreamManager.localPeerConnection[0].addStream(VideoStreamManager.localStream);
 		VideoStreamManager.streamingLocalVideo = true;
 		VideoStreamManager.hangupButton.disabled = false;
 		// Enable all call buttons
 		UserManager.createCallHTML();
+		addStatus("Added my camera's video stream");
 	}
 
 	this.gotRemoteStream = function(event)
@@ -112,11 +129,12 @@ var VideoStreamManager = new function()
 		//alert("gotRemoteStream yo!");
 		VideoStreamManager.remoteStream = event.stream;
 		VideoStreamManager.remoteVideo.src = URL.createObjectURL(event.stream);
-		//VideoStreamManager.localPeerConnection.addStream(VideoStreamManager.remoteStream);
+		//VideoStreamManager.localPeerConnection[0].addStream(VideoStreamManager.remoteStream);
 		BrowserVideoFunctions.attachMediaStream(VideoStreamManager.remoteVideo, event.stream);
 		trace("Received remote stream");
 		var otherVideoDude = VideoStreamManager.isCaller() ? VideoStreamManager.recipientID : VideoStreamManager.callerID;
 		updateCallStatus("You're in a video call with " + UserManager.getUserName(otherVideoDude));
+		addStatus("Added " + UserManager.getUserName(otherVideoDude) + "'s video stream! We've got a video call :)");
 	}
 
 	this.start = function()
@@ -158,9 +176,10 @@ var VideoStreamManager = new function()
 
 		if (this.isCaller())
 		{
-			VideoStreamManager.localPeerConnection.createOffer(VideoStreamManager.gotLocalDescription, handleError, sdpConstraints);
+			VideoStreamManager.localPeerConnection[0].createOffer(VideoStreamManager.gotLocalDescription, handleError, sdpConstraints);
 			trace("Added localStream to localPeerConnection");
 			updateCallStatus("Calling " + UserManager.getUserName(recipientID));
+			addStatus("Making a call! Sending an offer to " + UserManager.getUserName(recipientID));
 		}
 		else if (this.isRecipient())
 		{
@@ -180,7 +199,7 @@ var VideoStreamManager = new function()
 	this.gotLocalDescription = function(description)
 	{
 		//if (description.type != "offer")
-			VideoStreamManager.localPeerConnection.setLocalDescription(description, VideoStreamManager.onAddLocalDescription, handleError);
+			VideoStreamManager.localPeerConnection[0].setLocalDescription(description, VideoStreamManager.onAddLocalDescription, handleError);
 		//alert("type: " + description.type + "\nCaller? " + VideoStreamManager.isCaller() + "\nsdp: " + description.sdp);
 		var from = VideoStreamManager.isCaller() ? VideoStreamManager.callerID : VideoStreamManager.recipientID;
 		var to = VideoStreamManager.isCaller() ? VideoStreamManager.recipientID : VideoStreamManager.callerID;
@@ -203,20 +222,21 @@ var VideoStreamManager = new function()
 	{
 		var description = VideoStreamManager.remoteDescription;
 		//alert("gotRemoteDescription! description is " + description + "\nEvent is " + event);
-		VideoStreamManager.localPeerConnection.setRemoteDescription(description);
+		VideoStreamManager.localPeerConnection[0].setRemoteDescription(description);
 		trace("Answer from remote connection: \n" + description.sdp);
 		if (VideoStreamManager.isRecipient())
 		{
 			trace("Creating answer");
-			VideoStreamManager.localPeerConnection.createAnswer(VideoStreamManager.gotLocalDescription, handleError, sdpConstraints);
+			VideoStreamManager.localPeerConnection[0].createAnswer(VideoStreamManager.gotLocalDescription, handleError, sdpConstraints);
+			addStatus("Sending an answer");
 		}
 	}
 
 	this.hangup = function()
 	{
 		trace("Ending call");
-		this.localPeerConnection.close();
-		this.localPeerConnection = null;
+		this.localPeerConnection[0].close();
+		this.localPeerConnection[0] = null;
 		this.hangupButton.disabled = true;
 		this.streamingLocalVideo = false;
 		// Disable all call buttons
@@ -237,7 +257,7 @@ var VideoStreamManager = new function()
 			if (!addedAudioCandidate && !addedVideoCandidate)
 			{
 				trace("Local ICE candidate: \n" + event.candidate.candidate);
-				VideoStreamManager.localPeerConnection.addIceCandidate(new BrowserVideoFunctions.RTCIceCandidate(event.candidate, handleSuccess, handleError));
+				VideoStreamManager.localPeerConnection[0].addIceCandidate(new BrowserVideoFunctions.RTCIceCandidate(event.candidate, handleSuccess, handleError));
 				var candidateObj = {type: 'candidate',
 									mLineIndex: event.candidate.sdpMLineIndex,
 									mediaType: mediaType,
@@ -251,6 +271,7 @@ var VideoStreamManager = new function()
 				VideoStreamManager.logCall(candidateObj, to);
 				VideoStreamManager.addedLocalAudioCandidate = (VideoStreamManager.addedLocalAudioCandidate || (mediaType == "audio"));
 				VideoStreamManager.addedLocalVideoCandidate = (VideoStreamManager.addedLocalVideoCandidate || (mediaType == "video"));
+				addStatus("Got local ICE candidate.<br />Sending ICE candidate to " + UserManager.getUserName(to));
 			}
 		}
 	}
@@ -259,7 +280,7 @@ var VideoStreamManager = new function()
 	{
 		if (candidate)
 		{
-			VideoStreamManager.localPeerConnection.addIceCandidate(candidate);
+			VideoStreamManager.localPeerConnection[0].addIceCandidate(candidate);
 			trace("Remote ICE candidate: \n " + candidate.candidate);
 		}
 	}
@@ -278,7 +299,7 @@ var VideoStreamManager = new function()
 	this.remoteDescription;
 	this.callerID;
 	this.recipientID;
-	this.localPeerConnection;
+	this.localPeerConnection = [];
 	this.addedLocalAudioCandidate;
 	this.addedLocalVideoCandidate;
 	this.startButton;

@@ -222,12 +222,70 @@ function initPage()
 	ServerInterface.request({ login: videoUsername });
 	checkMessageIntervalObj = setInterval(function(){ServerInterface.request({ check_messages: "true", user_id: UserManager.myID })},10000);
 }
+/*
+ function hasGetUserMedia() {
+      // Note: Opera is unprefixed.
+      return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
+                navigator.mozGetUserMedia || navigator.msGetUserMedia);
+    }
+  
+    if (hasGetUserMedia()) {
+      // Good to go!
+    } else {
+      alert('getUserMedia() is not supported in your browser');
+    }
+  
+    window.URL = window.URL || window.webkitURL;
+    navigator.getUserMedia  = navigator.getUserMedia ||
+                             navigator.webkitGetUserMedia ||
+                              navigator.mozGetUserMedia ||
+                               navigator.msGetUserMedia;
+  
+    var video = document.querySelector('video');
+    var streamRecorder;
+    var webcamstream;
+  
+    if (navigator.getUserMedia) {
+      navigator.getUserMedia({audio: true, video: true}, function(stream) {
+        video.src = window.URL.createObjectURL(stream);
+        webcamstream = stream;
+    //  streamrecorder = webcamstream.record();
+      }, onVideoFail);
+    } else {
+        alert ('failed');
+    }
+  
+    function startRecording() {
+        streamRecorder = webcamstream.record();
+        setTimeout(stopRecording, 10000);
+    }
+    function stopRecording() {
+        streamRecorder.getRecordedData(postVideoToServer);
+    }
+    function postVideoToServer(videoblob) {
+  
+        var data = {};
+        data.video = videoblob;
+        data.metadata = 'test metadata';
+        data.action = "upload_video";
+        jQuery.post("uploadvideo.php", data, onUploadSuccess);
+    }
+    function onUploadSuccess() {
+        alert ('video uploaded');
+    }
+*/
+    </script>
 </script>
+<style>
+	td {vertical-align: top;}
+</style>
 </head>
 <body onload="initPage()">
 <table>
-<tr><td><video id="localVideo" style="width:400px; height: 300px" autoplay></video></td>
-<td><video id="remoteVideo" style="width:400px; height: 300px" autoplay></video></td></tr>
+<tr><td><video id="localVideo" style="width:200px; height: 150px" autoplay></video></td>
+<td>
+	<table id="remoteVideoContainer"></table>
+</td></tr>
 </table>
 
 <div>
@@ -238,10 +296,16 @@ function initPage()
 	</tr></table>
 </div>
 <div id="usersOnline"></div>
-<table>
-<tbody id="styleContainer">
-</tbody>
-</table>
-
+<table cellspacing="0">
+<tr><td>
+	<table>
+	<tbody id="styleContainer">
+	</tbody>
+	</table>
+</td>
+<td>
+	<div id="StatusList"></div>
+</td>
+</tr></table>
 </body>
 </html>

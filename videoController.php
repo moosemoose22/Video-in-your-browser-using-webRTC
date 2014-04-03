@@ -17,6 +17,7 @@
 							;";
 		$allCallIDSql = $mysqli->query($allLoggedOutCallIDs);
 		$allUsersArray = array();
+		/*
 		while ($row = $allCallIDSql->fetch_assoc())
 		{
 			$mysqli->query("DELETE FROM videoICEcandidates
@@ -26,7 +27,7 @@
 			$mysqli->query("DELETE FROM videoCalls
 							WHERE videoCallID = {$row['videoCallID']};");
 		}
-		
+		*/
 		$mysqli->query("DELETE FROM videoUsers
 						WHERE TIME_TO_SEC(TIMEDIFF(now(), videoUserTimestamp)) > 30;");
 
