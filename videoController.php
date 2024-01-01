@@ -1,13 +1,13 @@
-<?
+<?php
 	include("_sharedIncludes/globals.php");
 	include("_sharedIncludes/dbconnect.php");
-	
+
 	$client_form_data = json_decode(file_get_contents('php://input'), true);
-	
+
 	function getAllUsers()
 	{
 		$mysqli = $GLOBALS["mysqli"];
-		
+
 		$allLoggedOutCallIDs = "SELECT DISTINCT videoCallID
 							FROM videoUsers
 							WHERE videoUserID IN
@@ -42,7 +42,7 @@
 		$allUsersSql->free();
 		return $allUsersArray;
 	}
-	
+
 	if (isset($client_form_data['login']))
 	{
 		$checkIfExists = "SELECT *
@@ -56,12 +56,13 @@
 			$userExists = ($stmt->num_rows > 0);
 			$stmt->close();
 		}
-		$ip = getMyIP();
 
-		if (!$userExists)
+		$ip = getMyIP();
+		if (!isset($userExists) || is_null($userExists) || empty($userExists) || !$userExists)
 		{
-			$mysqli->query("INSERT INTO videoUsers (videoUsername, videoUserIP, videoUserTimestamp)
-								VALUES ('{$client_form_data['login']}', '{$ip}', now());");
+			$sql = "INSERT INTO videoUsers (videoUsername, videoUserIP, videoUserTimestamp)" .
+								"VALUES ('" . $client_form_data['login'] . "', '" . $ip . "', now());";
+			$mysqli->query($sql);
 		}
 		$allUsersArray = getAllUsers();
 		echo json_encode(array("allData" => Array("users" => $allUsersArray)));
@@ -85,32 +86,32 @@
 			$mysqli->query("INSERT INTO videoCallUsers (videoCallUserCallID, videoCallUserUserID)
 							VALUES ($callID, '{$client_form_data['to_video_user']}');");
 		}
-		else
+		else if (isset($client_form_data['call_ID']) && !empty($client_form_data['call_ID']) && defined($client_form_data['call_ID']))
 			$callID = $client_form_data['call_ID'];
-
-		if (empty($callID))
+		else
 			$callID = 0;
 
 		if (strcmp($sdp_array['type'], "candidate") == 0)
 		{
-			$mysqli->query("INSERT INTO videoICEcandidates (videoCallID, sendVideoUsername, receiveVideoUsername,
+			$candSql = "INSERT INTO videoICEcandidates (videoCallID, sendVideoUsername, receiveVideoUsername,
 							videoIceCandidateMLineIndex, videoIceCandidateMediaType, videoIceCandidateCandidate)
 							VALUES ($callID,
 							'{$client_form_data['from_video_user']}',
 							'{$client_form_data['to_video_user']}',
 							'{$sdp_array['mLineIndex']}',
 							'{$sdp_array['mediaType']}',
-							'{$sdp_array['candidate']}');");
+							'{$sdp_array['candidate']}');";
+			$mysqli->query($candSql);
 		}
 		else
 		{
-			
-			$mysqli->query("INSERT INTO videoSDP (videoCallID, sendVideoUsername, receiveVideoUsername, videoSDP, videoSDPtype)
+			$candSql = "INSERT INTO videoSDP (videoCallID, sendVideoUsername, receiveVideoUsername, videoSDP, videoSDPtype)
 							VALUES ($callID,
 							'{$client_form_data['from_video_user']}',
 							'{$client_form_data['to_video_user']}',
 							'{$sdp_array['sdp']}',
-							'{$sdp_array['type']}');");
+							'{$sdp_array['type']}');";
+			$mysqli->query($candSql);
 		}
 		echo json_encode(array("allData" => array("message" => "{$sdp_array['type']} message sent")));
 	}

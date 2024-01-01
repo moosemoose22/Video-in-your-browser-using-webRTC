@@ -8,8 +8,9 @@
 <head>
 <meta charset="UTF-8">
 <title>Video chat!</title>
-<script src="http://code.jquery.com/jquery-2.0.0.js"></script>
+<script src="https://code.jquery.com/jquery-2.0.0.js"></script>
 <script src="videoControlObjects.js"></script>
+<script type="text/javascript" src="fabric.js"></script>
 <!--<script src="http://code.jquery.com/jquery-2.0.0.min.js"></script>-->
 <script>
 	var videoUsername = "<?=$_POST['videoUsername']?>";
@@ -52,9 +53,10 @@
 				}
 			});
 		}
-		
+
 		this.processServerData = function(server_data)
 		{
+			console.log(server_data);
 			var allDataSetsObj = server_data["allData"];
 			if ("users" in allDataSetsObj)
 			{
@@ -83,12 +85,12 @@
 			if ("error" in allDataSetsObj)
 				alert(allDataSetsObj.error);
 		}
-		
+
 		var p_ajaxObj;
 	};
-	
+
 	var g_userArray = [];
-	
+
 //var constraints = {audio: true, video: true};
 /* HD
 video: {
@@ -134,13 +136,13 @@ var CssManager = new function()
 		$("#localVideo").css(filterName, styleText);
 		$("#" + newBrowserStyle + "Text").html(val + this.styles[newBrowserStyle].styleSuffix);
 	}
-	
+
 	this.reset = function(browserStyle, val)
 	{
 		this.setCss(browserStyle, val);
 		$("#" + browserStyle).val(this.styles[browserStyle].val);
 	}
-	
+
 	this.init = function()
 	{
 		var styleObj;
@@ -150,7 +152,7 @@ var CssManager = new function()
 			$("#styleContainer").append("<tr><td>" + styleObj.title +
 				"</td><td><input id=\"" + browserStyle + "\" type=\"range\" onchange=\"CssManager.setCss('" + browserStyle +
 				"', this.value" + ");\" value=\"" + styleObj.val + "\" step=\"" + styleObj.step + "\" min=\"" +
-				styleObj.min + "\" max=\"" + styleObj.max + "\" /></td><td id=\"" + browserStyle + "Text\"></td>" + 
+				styleObj.min + "\" max=\"" + styleObj.max + "\" /></td><td id=\"" + browserStyle + "Text\"></td>" +
 				"<td><button type=\"button\" onclick=\"CssManager.reset('" + browserStyle +
 				"', " + styleObj.val + ")\">Reset</button></td></tr>");
 			$("#" + browserStyle + "Text").html(styleObj.val + styleObj.styleSuffix);
@@ -172,7 +174,7 @@ var UserManager = new function()
 		else
 			return userID;
 	}
-	
+
 	this.handleUsersAdded = function()
 	{
 		this.removeOldUsers();
@@ -214,75 +216,114 @@ function call(recipientID)
 	VideoStreamManager.call(UserManager.myID, recipientID);
 }
 
+var canvas;
 function initPage()
 {
 	BrowserVideoFunctions.init();
 	VideoStreamManager.init();
 	CssManager.init();
 	ServerInterface.request({ login: videoUsername });
-	checkMessageIntervalObj = setInterval(function(){ServerInterface.request({ check_messages: "true", user_id: UserManager.myID })},10000);
+	checkMessageIntervalObj = setInterval(function(){ServerInterface.request({ check_messages: "true", user_id: UserManager.myID })},11000);
+	initCanvas();
+	var videoObj = document.getElementById("localVideo");
+	//canvas.add(videoObj);
 }
-/*
- function hasGetUserMedia() {
-      // Note: Opera is unprefixed.
-      return !!(navigator.getUserMedia || navigator.webkitGetUserMedia ||
-                navigator.mozGetUserMedia || navigator.msGetUserMedia);
-    }
-  
-    if (hasGetUserMedia()) {
-      // Good to go!
-    } else {
-      alert('getUserMedia() is not supported in your browser');
-    }
-  
-    window.URL = window.URL || window.webkitURL;
-    navigator.getUserMedia  = navigator.getUserMedia ||
-                             navigator.webkitGetUserMedia ||
-                              navigator.mozGetUserMedia ||
-                               navigator.msGetUserMedia;
-  
-    var video = document.querySelector('video');
-    var streamRecorder;
-    var webcamstream;
-  
-    if (navigator.getUserMedia) {
-      navigator.getUserMedia({audio: true, video: true}, function(stream) {
-        video.src = window.URL.createObjectURL(stream);
-        webcamstream = stream;
-    //  streamrecorder = webcamstream.record();
-      }, onVideoFail);
-    } else {
-        alert ('failed');
-    }
-  
-    function startRecording() {
-        streamRecorder = webcamstream.record();
-        setTimeout(stopRecording, 10000);
-    }
-    function stopRecording() {
-        streamRecorder.getRecordedData(postVideoToServer);
-    }
-    function postVideoToServer(videoblob) {
-  
-        var data = {};
-        data.video = videoblob;
-        data.metadata = 'test metadata';
-        data.action = "upload_video";
-        jQuery.post("uploadvideo.php", data, onUploadSuccess);
-    }
-    function onUploadSuccess() {
-        alert ('video uploaded');
-    }
+
+function initCanvas()
+{
+	canvas = this.__canvas = new fabric.Canvas('canvasObj');
+	fabric.Object.prototype.transparentCorners = false;
+	//canvas.selection = false; // disable group selection
+
+	canvas.on('mouse:down', function(options) {
+		startX = options.e.clientX;
+		startY = options.e.clientY;
+		console.log(options.e.clientX, options.e.clientY);
+	});
+	canvas.on('mouse:up', function(options) {
+		var x1 = (options.e.clientX > startX) ? startX : options.e.clientX;
+		var y1 = (options.e.clientY > startY) ? startY : options.e.clientY;
+		var x2 = (options.e.clientX < startX) ? startX : options.e.clientX;
+		var y2 = (options.e.clientY < startY) ? startY : options.e.clientY;
+		var width = x2 - x1;
+		var height = y2 - y1;
+		var newrect = new fabric.Rect({
+			width: width, height: height, left: x1, top: y1, angle: 0,
+			fill: 'rgba(255,0,0,0.5)'
+		});
+		if (!objectMoving)
+			canvas.add(newrect);
+		objectMoving = false;
+
+		console.log(options.e.clientX, options.e.clientY);
+	});
+
+	canvas.on({
+		'object:moving': onChange,
+		'object:scaling': onChange,
+		'object:rotating': onChange,
+	});
+	function onChange(options)
+	{
+		objectMoving = true;
+	}
+	console.log(fabric);
+}
+
+
+document.addEventListener('DOMContentLoaded', function(){
+	var v = document.getElementById('localVideo');
+	/*
+	var canvas = document.getElementById('canvasObj');
+	var context = canvas.getContext('2d');
+
+	var cw = Math.floor(canvas.clientWidth / 100);
+	var ch = Math.floor(canvas.clientHeight / 100);
+	canvas.width = cw;
+	canvas.height = ch;
 */
-    </script>
+	console.log("here");
+	v.addEventListener('play', function(){
+		//initCanvas();
+		console.log("playing");
+		//draw(this,context,cw,ch);
+	},false);
+
+},false);
+/*
+function draw(v,c,w,h) {
+	//if(v.paused || v.ended) return false;
+	//c.drawImage(v,0,0,w,h);
+	setTimeout(draw,20,v,c,w,h)
+}
+setTimeout(function()
+{
+	;//var currLog = $("#logMediaEvent").html();
+	//currLog +=
+	//$("#logMediaEvent").html()
+}, 1000);
+*/
 </script>
 <style>
 	td {vertical-align: top;}
+	#canvasObj
+	{
+		position: absolute;
+		border: 2px solid black;
+		z-index: 10;
+		left: 0px;
+		top: 0px;
+		width:400px;
+		height: 600px
+	}
 </style>
 </head>
 <body onload="initPage()">
 <table>
-<tr><td><video id="localVideo" style="width:200px; height: 150px" autoplay></video></td>
+<!--<tr><td><video id="localVideo" style="width:200px; height: 150px" autoplay></video></td>-->
+<tr><td>
+	<video id="localVideo" style="width:400px; height: 400px" autoplay></video>
+</td>
 <td>
 	<table id="remoteVideoContainer"></table>
 </td></tr>
@@ -305,7 +346,9 @@ function initPage()
 </td>
 <td>
 	<div id="StatusList"></div>
+	<div id="logMediaEvent"></div>
 </td>
 </tr></table>
+	<canvas id="canvasObj"></canvas>
 </body>
 </html>

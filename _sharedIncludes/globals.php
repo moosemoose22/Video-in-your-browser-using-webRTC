@@ -1,6 +1,6 @@
-<?
+<?php
 	setlocale(LC_ALL, "US");
-	
+
 	function getMyIP()
 	{
 		if (!empty($_SERVER['HTTP_CLIENT_IP']))

@@ -57,7 +57,7 @@ var VideoStreamManager = new function()
 		hangupButton.disabled = true;
 		this.initVideo(0);
 	}
-	
+
 	this.initVideo = function(videoConnectionIndex)
 	{
 		this.localPeerConnection[videoConnectionIndex] = new BrowserVideoFunctions.RTCPeerConnection(this.connectionServers, this.serverConstraints);
@@ -70,11 +70,31 @@ var VideoStreamManager = new function()
 		newtr.appendChild(newtd);
 		document.getElementById("remoteVideoContainer").appendChild(newtr);
 		// DOM apparently needs time to add video element to HTML page
+		console.log(videoConnectionIndex)
+		console.log('herehere')
 		window.setTimeout(function(){VideoStreamManager.remoteVideo = document.getElementById("remoteVideo" + videoConnectionIndex);}, 100)
+	}
+
+	this.initVideoFabric = function(videoConnectionIndex)
+	{
+		this.localPeerConnection[videoConnectionIndex] = new BrowserVideoFunctions.RTCPeerConnection(this.connectionServers, this.serverConstraints);
+		trace("Created local peer connection object localPeerConnection[" + videoConnectionIndex + "]");
+		this.localPeerConnection[videoConnectionIndex].onicecandidate = this.gotLocalIceCandidate;
+		this.localPeerConnection[videoConnectionIndex].onaddstream = this.gotLocalStream;
+		/*
+		var newtr = document.createElement("tr");
+		var newtd = document.createElement("td");
+		newtd.innerHTML = "<video id=\"remoteVideo" + videoConnectionIndex + "\" style=\"width:400px; height: 300px\" autoplay></video>";
+		newtr.appendChild(newtd);
+		document.getElementById("remoteVideoContainer").appendChild(newtr);
+		// DOM apparently needs time to add video element to HTML page
+		window.setTimeout(function(){VideoStreamManager.remoteVideo = document.getElementById("remoteVideo" + videoConnectionIndex);}, 100)
+		*/
 	}
 
 	this.processIncomingMessage = function(serverMessages)
 	{
+		console.log(serverMessages);
 		var messageCounter, messageLength, serverMessageObj;
 		for (messageCounter = 0, messageLength = serverMessages.length; messageCounter < messageLength; messageCounter++)
 		{
@@ -84,6 +104,7 @@ var VideoStreamManager = new function()
 			{
 				this.callerID = (serverMessageObj.type == "offer") ? serverMessageObj["from_user"] : UserManager.myID;
 				this.recipientID = (serverMessageObj.type == "offer") ? UserManager.myID : serverMessageObj["from_user"];
+				console.log(serverMessageObj);
 				this.callID = serverMessageObj.callID;
 				var remoteRequest = new BrowserVideoFunctions.RTCSessionDescription({type:serverMessageObj["type"], sdp:serverMessageObj["sdp"]});
 				this.remoteDescription = remoteRequest;
@@ -105,7 +126,7 @@ var VideoStreamManager = new function()
 			}
 		}
 	}
-	
+
 	this.onSetRemoteDescriptionSuccess = function()
 	{
 		trace("Set remote session description success.");
@@ -114,7 +135,10 @@ var VideoStreamManager = new function()
 
 	this.gotLocalStream = function(stream)
 	{
-		VideoStreamManager.localVideo.src = URL.createObjectURL(stream);
+		console.log(URL);
+		//VideoStreamManager.localVideo.src = URL.createObjectURL(stream);
+		console.log(stream)
+		VideoStreamManager.localVideo.srcObject = stream;
 		VideoStreamManager.localStream = stream;
 		VideoStreamManager.localPeerConnection[0].addStream(VideoStreamManager.localStream);
 		VideoStreamManager.streamingLocalVideo = true;
@@ -127,8 +151,11 @@ var VideoStreamManager = new function()
 	this.gotRemoteStream = function(event)
 	{
 		//alert("gotRemoteStream yo!");
+		console.log(VideoStreamManager.remoteVideo);
 		VideoStreamManager.remoteStream = event.stream;
-		VideoStreamManager.remoteVideo.src = URL.createObjectURL(event.stream);
+		//VideoStreamManager.remoteVideo.src = URL.createObjectURL(event.stream);
+		//VideoStreamManager.remoteVideo.src = window.webkitURL.createObjectURL(stream);
+		VideoStreamManager.remoteVideo.srcObject = event.stream;
 		//VideoStreamManager.localPeerConnection[0].addStream(VideoStreamManager.remoteStream);
 		BrowserVideoFunctions.attachMediaStream(VideoStreamManager.remoteVideo, event.stream);
 		trace("Received remote stream");
@@ -146,7 +173,8 @@ var VideoStreamManager = new function()
 			video:true
 		}, VideoStreamManager.gotLocalStream,
 		function(error) {
-			trace("getUserMedia error: ", error);
+			trace("getUserMedia error here: ");
+			trace(error);
 		});
 	}
 
@@ -203,13 +231,14 @@ var VideoStreamManager = new function()
 		//alert("type: " + description.type + "\nCaller? " + VideoStreamManager.isCaller() + "\nsdp: " + description.sdp);
 		var from = VideoStreamManager.isCaller() ? VideoStreamManager.callerID : VideoStreamManager.recipientID;
 		var to = VideoStreamManager.isCaller() ? VideoStreamManager.recipientID : VideoStreamManager.callerID;
+		console.log(VideoStreamManager.callID);
 		ServerInterface.request({ sdp_message: description,
-									call_ID: VideoStreamManager.callID,
+									call_ID: VideoStreamManager.callID || 0,
 									from_video_user: from,
 									to_video_user: to});
 		VideoStreamManager.logCall(description, to);
 	}
-	
+
 	this.onAddLocalDescription = function(description)
 	{
 		trace("onAddLocalDescription description is " + description);
@@ -251,8 +280,8 @@ var VideoStreamManager = new function()
 		if (event.candidate)
 		{
 			var mediaType = event.candidate.sdpMid;
-			var addedAudioCandidate = (mediaType == "audio" && VideoStreamManager.addedLocalAudioCandidate);
-			var addedVideoCandidate = (mediaType == "video" && VideoStreamManager.addedLocalVideoCandidate);
+			var addedAudioCandidate = ((mediaType === "audio" || mediaType === 0) && VideoStreamManager.addedLocalAudioCandidate);
+			var addedVideoCandidate = ((mediaType === "video" || mediaType === 1) && VideoStreamManager.addedLocalVideoCandidate);
 
 			if (!addedAudioCandidate && !addedVideoCandidate)
 			{
@@ -265,12 +294,12 @@ var VideoStreamManager = new function()
 				var from = VideoStreamManager.isCaller() ? VideoStreamManager.callerID : VideoStreamManager.recipientID;
 				var to = VideoStreamManager.isCaller() ? VideoStreamManager.recipientID : VideoStreamManager.callerID;
 				ServerInterface.request({ sdp_message: candidateObj,
-										call_ID: VideoStreamManager.callID,
+										call_ID: VideoStreamManager.callID || 0,
 										from_video_user: from,
 										to_video_user: to});
 				VideoStreamManager.logCall(candidateObj, to);
-				VideoStreamManager.addedLocalAudioCandidate = (VideoStreamManager.addedLocalAudioCandidate || (mediaType == "audio"));
-				VideoStreamManager.addedLocalVideoCandidate = (VideoStreamManager.addedLocalVideoCandidate || (mediaType == "video"));
+				VideoStreamManager.addedLocalAudioCandidate = (VideoStreamManager.addedLocalAudioCandidate || (mediaType === "audio" || mediaType === 0));
+				VideoStreamManager.addedLocalVideoCandidate = (VideoStreamManager.addedLocalVideoCandidate || (mediaType === "video" || mediaType === 1));
 				addStatus("Got local ICE candidate.<br />Sending ICE candidate to " + UserManager.getUserName(to));
 			}
 		}
@@ -284,18 +313,39 @@ var VideoStreamManager = new function()
 			trace("Remote ICE candidate: \n " + candidate.candidate);
 		}
 	}
-	
+
+	this.startRecording = function()
+	{
+		if (this.remoteStream)
+	        this.streamRecorder = this.remoteStream.record();
+	}
+
+	this.stopRecording = function()
+	{
+		this.streamRecorder.getRecordedData(VideoStreamManager.saveVideo);
+	}
+
+	this.saveVideo = function(videoblob)
+	{
+		var data = {};
+		data.video = videoblob;
+		data.metadata = 'test metadata';
+		data.action = "upload_video";
+		//#jQuery.post("uploadvideo.php", data, onUploadSuccess);
+    }
+
 	this.logCall = function(callObj, toUser)
 	{
 		trace("Sent " + callObj.type + " message with call ID " + VideoStreamManager.callID + " to " + toUser);
 	}
-	
+
 	this.connectionServers;
 	this.serverConstraints;
 	this.localVideo;
 	this.remoteVideo;
 	this.localStream;
 	this.remoteStream;
+	this.streamRecorder;
 	this.remoteDescription;
 	this.callerID;
 	this.recipientID;
@@ -305,6 +355,7 @@ var VideoStreamManager = new function()
 	this.startButton;
 	this.hangupButton;
 	this.streamingLocalVideo;
+	this.streamRecorder;
 };
 
 var BrowserVideoFunctions = new function()
@@ -317,17 +368,17 @@ var BrowserVideoFunctions = new function()
 	this.webrtcDetectedVersion = null;
 	this.RTCSessionDescription = null;
 	this.RTCIceCandidate = null;
-	
+
 	this.isFirefox = function()
 	{
 		return this.webrtcDetectedBrowser == "firefox";
 	}
-	
+
 	this.isChrome = function()
 	{
 		return this.webrtcDetectedBrowser == "chrome";
 	}
-	
+
 	this.init = function()
 	{
 		if (navigator.mozGetUserMedia)
